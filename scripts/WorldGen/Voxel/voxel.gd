@@ -9,6 +9,8 @@ var noise : float = 0.0
 var buffer : bool = false
 var water : bool = false
 var air_probability : float = 0
+## Placeholder ranking score for weighted village placement.
+var village_weight : float = 0.0
 var surface_voxel := false
 
 var neighbors = []

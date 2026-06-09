@@ -19,7 +19,7 @@ flowchart TD
     C --> D[VoxelGenerator]
     D --> E[Chunk mesh + collider]
     D --> F[WorldMap map_as_dict + surface_layer]
-                                                                                                   A -->|world_generated| G[ObjectPlacer listener optional]
+   A -->|world_generated| G[ObjectPlacer listener optional]
    A -->|world_generated| H[Interaction tracker listener optional]
    A -->|generation_profile_ready| I[GenerationReportLabel listener optional]
 ```
@@ -105,6 +105,18 @@ Public API for external systems:
 - `world_generator`: signal source for `world_generated`.
 - `world_generator_path`: fallback path for resolving `world_generator`.
 - `auto_connect`: if true, listener auto-connects in `_ready()`.
+- `village_spawn_mode`: choose spacing fill or target-count village mode.
+- `dynamic_village_target`: enables target villages based on placeable tile count.
+- `fixed_village_target`: fallback target villages when dynamic mode is off.
+- `villages_per_placeable_tile`: dynamic village ratio over placeable tiles.
+- `max_dynamic_village_target`: cap for dynamic village target.
+- `use_weighted_village_selection`: enable village candidate ranking by weight.
+- `min_village_weight`: threshold for village candidate eligibility.
+- `center_weight_factor`, `noise_weight_factor`, `solidity_weight_factor`: placeholder scoring weights for village ranking.
+- `unit_spawn_mode`: choose radius-based, fixed, or per-village unit count mode.
+- `fixed_unit_count`: fixed units when unit mode is fixed.
+- `units_per_village`: dynamic unit ratio when mode is per-village.
+- `max_dynamic_unit_count`: cap for per-village dynamic unit count.
 - `village`: village scene spawned on valid placeable voxels.
 - `proto_unit`: unit scene used for starting unit placement.
 
@@ -162,6 +174,22 @@ Public API for external systems:
 8. Emit `world_generated` signal.
 9. Optional listeners react (placement, interaction initialization, UI updates).
 10. Generation complete.
+
+## Dynamic spawn placeholder flow
+
+Current `object_placer.gd` flow is modular and future-proof for richer spawn logic:
+
+1. Collect placeable tiles from `WorldMap.surface_layer`.
+2. Distribute placeholder `village_weight` on each `Voxel`.
+3. Rank/select village candidates by spacing + optional weighted ordering.
+4. Spawn villages.
+5. Resolve unit count by configured unit spawn mode.
+6. Spawn units.
+
+Extension point for future features:
+
+- Replace `calculate_village_weight_placeholder()` with biome/resource/pathing desirability scoring.
+- Keep `Voxel.village_weight` as shared score channel so other systems can reuse same ranking data.
 
 ## Key GenerationSettings controls
 

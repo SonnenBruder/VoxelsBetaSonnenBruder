@@ -21,6 +21,5 @@ noise_height_bias = 0.183
 ground_to_air_ratio = 0.658
 noise = SubResource("FastNoiseLite_fe1qq")
 material = ExtResource("1_x67sk")
-spawn_villages_and_units = false
 map_edge_buffer = 4
 metadata/_custom_type_script = "uid://0k8jgfy8cqfx"
