@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bbqxpsy3vniy8"]
+[gd_scene format=3 uid="uid://bbqxpsy3vniy8"]
 
 [ext_resource type="Script" uid="uid://b28iyxlwylpa5" path="res://scripts/camera_script.gd" id="1_1xefc"]
 [ext_resource type="Texture2D" uid="uid://dvbkqw12i4obk" path="res://assets/Materials/SkyBG.png" id="2_l7mlp"]
@@ -32,16 +32,15 @@ fog_sky_affect = 0.0
 fog_height = 1.0
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_1lvu4"]
-dof_blur_far_enabled = true
 dof_blur_far_distance = 40.0
 dof_blur_far_transition = 45.0
 
-[node name="World" type="Node3D"]
+[node name="World" type="Node3D" unique_id=2033512727]
 
-[node name="CameraParent" type="Node3D" parent="."]
+[node name="CameraParent" type="Node3D" parent="." unique_id=1284480335]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.117906, 15.1842, 10.1434)
 
-[node name="Camera3D" type="Camera3D" parent="CameraParent" node_paths=PackedStringArray("sun")]
+[node name="Camera3D" type="Camera3D" parent="CameraParent" unique_id=254139832 node_paths=PackedStringArray("sun")]
 transform = Transform3D(1, 0, 0, 0, 0.998537, -0.0540788, 0, 0.0540788, 0.998537, 0, 0, 0)
 script = ExtResource("1_1xefc")
 movespeed = 9
@@ -50,23 +49,23 @@ height = Vector2(-10, 40)
 rot = Vector2(-20, -90)
 sun = NodePath("../../Scene/DirectionalLight3D")
 
-[node name="Scene" type="Node3D" parent="."]
+[node name="Scene" type="Node3D" parent="." unique_id=553324462]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="Scene"]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Scene" unique_id=2010237010]
 environment = SubResource("Environment_f2ci6")
 camera_attributes = SubResource("CameraAttributesPractical_1lvu4")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Scene"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Scene" unique_id=911198818]
 transform = Transform3D(0.151402, -0.877164, 0.455698, 0.0622852, 0.468562, 0.881232, -0.986508, -0.105037, 0.125576, 0, 4.09007, 0)
 shadow_enabled = true
 directional_shadow_mode = 0
 sky_mode = 1
 
-[node name="BGCanvasLayer" type="CanvasLayer" parent="."]
+[node name="BGCanvasLayer" type="CanvasLayer" parent="." unique_id=966199336]
 layer = -100
 visible = false
 
-[node name="SpaceBG_img" type="TextureRect" parent="BGCanvasLayer"]
+[node name="SpaceBG_img" type="TextureRect" parent="BGCanvasLayer" unique_id=187108315]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -78,23 +77,23 @@ texture = ExtResource("2_l7mlp")
 expand_mode = 3
 stretch_mode = 4
 
-[node name="Builder" type="Node" parent="."]
+[node name="Builder" type="Node" parent="." unique_id=353189130]
 
-[node name="WorldGenerator" type="Node" parent="Builder" node_paths=PackedStringArray("object_placer")]
+[node name="WorldGenerator" type="Node" parent="Builder" unique_id=1265212691 node_paths=PackedStringArray("object_placer")]
 script = ExtResource("3_davhy")
 settings = ExtResource("4_58wc8")
 object_placer = NodePath("../ObjectPlacer")
 
-[node name="ObjectPlacer" type="Node" parent="Builder"]
+[node name="ObjectPlacer" type="Node" parent="Builder" unique_id=2102657466]
 script = ExtResource("9_p13dw")
 village = ExtResource("7_yrli1")
 proto_unit = ExtResource("8_r58of")
 
-[node name="Pathfinder" type="Node" parent="Builder"]
+[node name="Pathfinder" type="Node" parent="Builder" unique_id=2105125775]
 script = ExtResource("10_0b4my")
 highlight_marker = ExtResource("9_6pl24")
 
-[node name="Interaction_tracker" type="Node3D" parent="Builder" node_paths=PackedStringArray("main_camera", "p_finder", "selection_indicator")]
+[node name="Interaction_tracker" type="Node3D" parent="Builder" unique_id=954510790 node_paths=PackedStringArray("main_camera", "p_finder", "selection_indicator")]
 script = ExtResource("12_tt8b8")
 voxel_cursor_scene = ExtResource("10_6pl24")
 unit_cursor_scene = ExtResource("11_w22tq")
@@ -102,22 +101,22 @@ main_camera = NodePath("../../CameraParent/Camera3D")
 p_finder = NodePath("../Pathfinder")
 selection_indicator = NodePath("../../Control/TextureRect")
 
-[node name="Control" type="Control" parent="."]
+[node name="Control" type="Control" parent="." unique_id=1332354581]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control" unique_id=156274422]
 layout_mode = 0
 offset_right = 100.0
 offset_bottom = 80.0
 
-[node name="Button" type="Button" parent="Control/VBoxContainer"]
+[node name="Button" type="Button" parent="Control/VBoxContainer" unique_id=580172837]
 layout_mode = 2
 text = "Generate"
 
-[node name="RichTextLabel" type="RichTextLabel" parent="Control/VBoxContainer"]
+[node name="RichTextLabel" type="RichTextLabel" parent="Control/VBoxContainer" unique_id=767895136]
 layout_mode = 2
 bbcode_enabled = true
 text = "Text Here"
@@ -125,7 +124,7 @@ fit_content = true
 scroll_active = false
 autowrap_mode = 0
 
-[node name="TextureRect" type="TextureRect" parent="Control"]
+[node name="TextureRect" type="TextureRect" parent="Control" unique_id=252407764]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -139,6 +138,6 @@ texture = ExtResource("13_w22tq")
 expand_mode = 3
 stretch_mode = 4
 
-[node name="Chunks" type="Node3D" parent="."]
+[node name="Chunks" type="Node3D" parent="." unique_id=1512669309]
 
 [connection signal="pressed" from="Control/VBoxContainer/Button" to="Builder/WorldGenerator" method="_ready"]

@@ -23,6 +23,20 @@ To get started with this project, follow these steps:
 1. Clone the repository to your local machine.
 2. Open the project with Godot 4.5 or later
 
+## Reuse in other projects
+
+Use the dedicated reuse guide:
+
+- [docs/REUSE_GUIDE.md](docs/REUSE_GUIDE.md)
+
+The guide covers:
+
+- Required files and autoloads
+- Scene contract and dependencies
+- Step-by-step migration checklist
+- Tuning `GenerationSettings`
+- Common pitfalls when regenerating maps at runtime
+
 ## Video overview!
 https://youtu.be/pVckYwh_fKk
 
