@@ -50,10 +50,19 @@ Copy these files as baseline generator package.
 ### Optional scripts (only if you need gameplay layer)
 
 - `scripts/WorldGen/object_placer.gd`
+- `scripts/WorldGen/Spawn/spawn_settings.gd`
+- `scripts/WorldGen/Spawn/voxel_weight_strategy.gd`
+- `scripts/WorldGen/Spawn/default_voxel_weight_strategy.gd`
+- `scripts/WorldGen/Spawn/village_spawn_component.gd`
+- `scripts/WorldGen/Spawn/unit_spawn_component.gd`
 - `scripts/pathfinder.gd`
 - `scripts/interaction.gd`
 - `scripts/WorldGen/generation_report_label.gd`
 - `scripts/unit.gd`
+
+### Optional spawn resources
+
+- `Resources/SpawnSettings/default_spawn_settings.tres`
 
 ### Currently unused in runtime generation path
 
@@ -105,20 +114,43 @@ Public API for external systems:
 - `world_generator`: signal source for `world_generated`.
 - `world_generator_path`: fallback path for resolving `world_generator`.
 - `auto_connect`: if true, listener auto-connects in `_ready()`.
-- `village_spawn_mode`: choose spacing fill or target-count village mode.
-- `dynamic_village_target`: enables target villages based on placeable tile count.
-- `fixed_village_target`: fallback target villages when dynamic mode is off.
-- `villages_per_placeable_tile`: dynamic village ratio over placeable tiles.
-- `max_dynamic_village_target`: cap for dynamic village target.
-- `use_weighted_village_selection`: enable village candidate ranking by weight.
-- `min_village_weight`: threshold for village candidate eligibility.
-- `center_weight_factor`, `noise_weight_factor`, `solidity_weight_factor`: placeholder scoring weights for village ranking.
-- `unit_spawn_mode`: choose radius-based, fixed, or per-village unit count mode.
-- `fixed_unit_count`: fixed units when unit mode is fixed.
-- `units_per_village`: dynamic unit ratio when mode is per-village.
-- `max_dynamic_unit_count`: cap for per-village dynamic unit count.
+- `spawn_settings`: data-driven `SpawnSettings` resource used by spawn pipeline.
+- `village_spawn_component`: component that plans village tiles.
+- `village_spawn_component_path`: fallback path for village component.
+- `unit_spawn_component`: component that resolves/spawns units.
+- `unit_spawn_component_path`: fallback path for unit component.
+- `auto_create_spawn_modules`: creates default settings/components when missing.
 - `village`: village scene spawned on valid placeable voxels.
 - `proto_unit`: unit scene used for starting unit placement.
+
+### `spawn_settings.gd`
+
+- `use_generation_spawn_toggle`: use `GenerationSettings.spawn_villages_and_units` as master toggle.
+- `spawn_enabled_override`: manual master toggle if generation toggle is ignored.
+- `village_spawn_mode`: spacing fill or target-count village planning.
+- `village_spacing_override`: override spacing (`-1` uses generation spacing).
+- `dynamic_village_target`: enables placeable-count-scaled village target.
+- `fixed_village_target`: fallback target when dynamic target is disabled.
+- `villages_per_placeable_tile`: dynamic village density ratio.
+- `max_dynamic_village_target`: cap for dynamic village target.
+- `use_weighted_village_selection`: enables weighted village candidate ordering.
+- `min_village_weight`: cutoff threshold for weighted village eligibility.
+- `weighting_profile`: preset weighting style for placeholder scoring.
+- `custom_center_weight`, `custom_noise_weight`, `custom_solidity_weight`: custom profile factors.
+- `unit_spawn_mode`: radius-based, fixed, or per-village unit count mode.
+- `fixed_unit_count`: explicit unit count for fixed mode.
+- `units_per_village`: dynamic ratio for per-village unit mode.
+- `max_dynamic_unit_count`: cap for per-village unit mode.
+- `max_unit_spawn_attempts_per_unit`: unit placement safety attempts multiplier.
+
+### `village_spawn_component.gd`
+
+- `weight_strategy`: pluggable resource implementing `VoxelWeightStrategy`.
+- `auto_create_default_weight_strategy`: fallback to `DefaultVoxelWeightStrategy` when no strategy is assigned.
+
+### `unit_spawn_component.gd`
+
+- No exported fields yet; behavior is configured through `SpawnSettings`.
 
 ### `interaction.gd`
 
@@ -146,12 +178,14 @@ Public API for external systems:
 4. Assign `chunks_root` in inspector (or set `chunks_root_path`).
 5. Add optional listeners you need:
    - `ObjectPlacer` listening to `world_generated`
+   - configure `ObjectPlacer.spawn_settings` (resource)
    - `Interaction_tracker` listening to `world_generated`
    - `GenerationReportLabel` listening to `generation_profile_ready`
 6. Create or copy one `GenerationSettings` resource and assign it to `world_gen.gd`.
 7. Set `GenerationSettings.material` and ensure atlas mapping in `VoxelData.tile_map` is valid.
 8. Disable gameplay extras first:
    - `spawn_villages_and_units = false`
+   - or set `SpawnSettings.use_generation_spawn_toggle = false` and `spawn_enabled_override = false`
 9. Run generation once, verify mesh and collision.
 10. If using villages/units, add `ObjectPlacer` node and connect it to `world_generated` signal (manual or auto-connect).
 11. Re-enable optional systems (villages, units, pathfinding) one by one.
@@ -180,16 +214,19 @@ Public API for external systems:
 Current `object_placer.gd` flow is modular and future-proof for richer spawn logic:
 
 1. Collect placeable tiles from `WorldMap.surface_layer`.
-2. Distribute placeholder `village_weight` on each `Voxel`.
-3. Rank/select village candidates by spacing + optional weighted ordering.
-4. Spawn villages.
-5. Resolve unit count by configured unit spawn mode.
-6. Spawn units.
+2. Delegate village planning to `VillageSpawnComponent`.
+3. `VillageSpawnComponent` delegates scoring to configurable `VoxelWeightStrategy`.
+4. Distribute placeholder `village_weight` on each `Voxel`.
+5. Rank/select village candidates by spacing + optional weighted ordering.
+6. Spawn villages through `ObjectPlacer`.
+7. Delegate unit count + spawn attempts to `UnitSpawnComponent`.
+8. Spawn units.
 
 Extension point for future features:
 
-- Replace `calculate_village_weight_placeholder()` with biome/resource/pathing desirability scoring.
+- Replace `DefaultVoxelWeightStrategy` with scene-specific/custom weight strategy resources.
 - Keep `Voxel.village_weight` as shared score channel so other systems can reuse same ranking data.
+- Reuse same world generation in different scenes (world map, battlefield) by swapping only `SpawnSettings` and spawn components.
 
 ## Key GenerationSettings controls
 

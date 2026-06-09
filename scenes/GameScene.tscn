@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://dvbkqw12i4obk" path="res://assets/Materials/SkyBG.png" id="2_l7mlp"]
 [ext_resource type="Script" uid="uid://bjw6prx0uxiil" path="res://scripts/WorldGen/world_gen.gd" id="3_davhy"]
 [ext_resource type="Resource" uid="uid://ckxwwmtqxkujw" path="res://Resources/GenerationSettings/test.tres" id="4_58wc8"]
+[ext_resource type="Resource" uid="uid://5xvv2l1ghacu" path="res://Resources/SpawnSettings/worldmap_dense_spawn_settings.tres" id="6_qitmq"]
 [ext_resource type="PackedScene" uid="uid://5hq7deseilvo" path="res://scenes/POI/VillageScene.tscn" id="7_yrli1"]
 [ext_resource type="PackedScene" uid="uid://grijaagmqw4" path="res://scenes/Units/prototype_unit.tscn" id="8_r58of"]
 [ext_resource type="PackedScene" uid="uid://bb3hit25an5ti" path="res://scenes/Cursors/path_overlay.tscn" id="9_6pl24"]
@@ -87,6 +88,7 @@ settings = ExtResource("4_58wc8")
 [node name="ObjectPlacer" type="Node" parent="Builder" unique_id=2102657466 node_paths=PackedStringArray("world_generator")]
 script = ExtResource("9_p13dw")
 world_generator = NodePath("../WorldGenerator")
+spawn_settings = ExtResource("6_qitmq")
 village = ExtResource("7_yrli1")
 proto_unit = ExtResource("8_r58of")
 

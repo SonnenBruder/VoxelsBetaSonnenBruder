@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SpawnSettings" format=3]
+
+[ext_resource type="Script" path="res://scripts/WorldGen/Spawn/spawn_settings.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+use_generation_spawn_toggle = true
+spawn_enabled_override = true
+village_spawn_mode = 0
+village_spacing_override = -1
+dynamic_village_target = true
+fixed_village_target = 10
+villages_per_placeable_tile = 0.008
+max_dynamic_village_target = 40
+use_weighted_village_selection = true
+min_village_weight = 0.25
+weighting_profile = 0
+custom_center_weight = 0.45
+custom_noise_weight = 0.35
+custom_solidity_weight = 0.2
+unit_spawn_mode = 2
+fixed_unit_count = 8
+units_per_village = 1.4
+max_dynamic_unit_count = 80
+max_unit_spawn_attempts_per_unit = 12
+metadata/_custom_type_script = "res://scripts/WorldGen/Spawn/spawn_settings.gd"
