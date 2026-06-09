@@ -1,11 +1,64 @@
 extends Node
 class_name ObjectPlacer
 
+@export_category("Dependencies")
+@export var world_generator : Node
+@export var world_generator_path: NodePath = ^"../WorldGenerator"
+@export var auto_connect := true
+
+@export_category("Scenes")
 @export var village : PackedScene
 @export var proto_unit : PackedScene
 
+
+func _ready() -> void:
+	if auto_connect:
+		connect_to_world_generator()
+
+
+func connect_to_world_generator() -> void:
+	resolve_dependencies()
+	if world_generator == null:
+		push_warning("ObjectPlacer: world_generator missing, placement listener disabled")
+		return
+	if not world_generator.has_signal("world_generated"):
+		push_warning("ObjectPlacer: world_generator has no world_generated signal")
+		return
+	var callback := Callable(self, "_on_world_generated")
+	if not world_generator.is_connected("world_generated", callback):
+		world_generator.connect("world_generated", callback)
+
+
+func resolve_dependencies() -> void:
+	if world_generator == null and not world_generator_path.is_empty():
+		world_generator = get_node_or_null(world_generator_path)
+
+
+func _on_world_generated(_chunk: Chunk, _voxel_count: int) -> void:
+	clear_objects()
+	var settings := WorldMap.world_settings
+	if settings == null or not settings.spawn_villages_and_units:
+		return
+	var placeable = get_placeable_voxels()
+	place_villages(placeable, settings.spacing)
+	create_starting_units(floori(settings.radius * 0.5))
+
+
+func get_placeable_voxels() -> Array[Voxel]:
+	var placeable_tiles : Array[Voxel] = []
+	for key in WorldMap.surface_layer:
+		var voxel = WorldMap.surface_layer[key]
+		if voxel.buffer or not voxel.placeable:
+			continue
+		placeable_tiles.append(voxel)
+	print(str(placeable_tiles.size()) + " placeable tiles")
+	return placeable_tiles
+
 ## placeholder functionality for placing units onto the map
 func create_starting_units(count : int):
+	if proto_unit == null:
+		push_warning("ObjectPlacer: proto_unit scene missing")
+		return
 	var safety_count = 0 #Add safety counter in case no valid tiles
 	## Test pathfinder
 	while count > 0 and safety_count < 50:
@@ -13,6 +66,9 @@ func create_starting_units(count : int):
 		if WorldMap.surface_layer.size() > 0:
 			var random_key = WorldMap.surface_layer.keys().pick_random()
 			voxel = WorldMap.surface_layer[random_key]
+		if voxel == null:
+			safety_count += 1
+			continue
 
 		if voxel.occupier != null: #voxel.type == VoxelData.voxel_type.WATER or 
 			safety_count += 1

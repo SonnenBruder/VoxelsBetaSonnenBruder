@@ -79,13 +79,13 @@ stretch_mode = 4
 
 [node name="Builder" type="Node" parent="." unique_id=353189130]
 
-[node name="WorldGenerator" type="Node" parent="Builder" unique_id=1265212691 node_paths=PackedStringArray("object_placer")]
+[node name="WorldGenerator" type="Node" parent="Builder" unique_id=1265212691]
 script = ExtResource("3_davhy")
 settings = ExtResource("4_58wc8")
-object_placer = NodePath("../ObjectPlacer")
 
-[node name="ObjectPlacer" type="Node" parent="Builder" unique_id=2102657466]
+[node name="ObjectPlacer" type="Node" parent="Builder" unique_id=2102657466 node_paths=PackedStringArray("world_generator")]
 script = ExtResource("9_p13dw")
+world_generator = NodePath("../Pathfinder")
 village = ExtResource("7_yrli1")
 proto_unit = ExtResource("8_r58of")
 

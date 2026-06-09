@@ -6,13 +6,11 @@ signal world_generated(chunk: Chunk, voxel_count: int)
 @export var settings : GenerationSettings
 @export_category("Dependencies")
 @export var chunks_root : Node3D
-@export var object_placer : Node
 @export var interaction_tracker: Node
 @export var results_label: RichTextLabel
 
 @export_category("Fallback Paths")
 @export var chunks_root_path: NodePath = ^"../../Chunks"
-@export var object_placer_path: NodePath = ^"../ObjectPlacer"
 @export var interaction_tracker_path: NodePath = ^"../Interaction_tracker"
 @export var results_label_path: NodePath = ^"../../Control/VBoxContainer/RichTextLabel"
 
@@ -22,7 +20,7 @@ signal world_generated(chunk: Chunk, voxel_count: int)
 @export var log_results_to_label := true
 
 
-## Starting point: Generate a random seed, create the tiles, place POI's
+## Starting point: Generate random seed, create tiles, emit completion signal
 func _ready() -> void:
 	if not generate_on_ready:
 		return
@@ -44,16 +42,12 @@ func regenerate_world() -> void:
 	var children = chunks_root.get_children() + get_children()
 	for c in children:
 		c.free()
-	if object_placer and object_placer.has_method("clear_objects"):
-		object_placer.call("clear_objects")
 	call_deferred("generate_world")
 
 
 func resolve_dependencies() -> void:
 	if chunks_root == null and not chunks_root_path.is_empty():
 		chunks_root = get_node_or_null(chunks_root_path) as Node3D
-	if object_placer == null and not object_placer_path.is_empty():
-		object_placer = get_node_or_null(object_placer_path)
 	if interaction_tracker == null and not interaction_tracker_path.is_empty():
 		interaction_tracker = get_node_or_null(interaction_tracker_path)
 	if results_label == null and not results_label_path.is_empty():
@@ -82,17 +76,6 @@ func generate_world():
 	chunks_root.add_child(new_chunk)
 	new_chunk.init_chunk()
 	interval["Create Voxel Mesh -- "] = Time.get_ticks_msec()
-
-	## Spawn villages and units
-	if settings.spawn_villages_and_units and object_placer:
-		var placeable = get_placeable_voxels()
-		if object_placer.has_method("place_villages"):
-			object_placer.call("place_villages", placeable, settings.spacing)
-		if object_placer.has_method("create_starting_units"):
-			object_placer.call("create_starting_units", floori(settings.radius*0.5))
-		interval["Spawn Villages -- "] = Time.get_ticks_msec()
-	elif settings.spawn_villages_and_units:
-		push_warning("WorldGenerator: spawn_villages_and_units enabled but object_placer missing")
 	
 	print_generation_results(starttime, interval)
 	if initialize_interaction and interaction_tracker and interaction_tracker.has_method("init"):
@@ -127,15 +110,3 @@ func print_generation_results(start : float, dict : Dictionary):
 	print("Total completion time: ", total, unit)
 	if log_results_to_label and results_label:
 		results_label.text += "[b]Total completion time: [/b][i]" + str(total) + unit + "[/i]"
-
-
-## Ignore buffer and ocean to return for object placer
-func get_placeable_voxels() -> Array[Voxel]:
-	var placeable_tiles : Array[Voxel] = []
-	for key in WorldMap.surface_layer:
-		var voxel = WorldMap.surface_layer[key]
-		if voxel.buffer or not voxel.placeable:
-			continue
-		placeable_tiles.append(voxel)
-	print(str(placeable_tiles.size()) + " placeable tiles")
-	return placeable_tiles

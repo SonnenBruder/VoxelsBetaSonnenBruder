@@ -19,7 +19,7 @@ flowchart TD
     C --> D[VoxelGenerator]
     D --> E[Chunk mesh + collider]
     D --> F[WorldMap map_as_dict + surface_layer]
-    A --> G[ObjectPlacer optional]
+   A -->|world_generated signal| G[ObjectPlacer listener optional]
     A --> H[Interaction tracker optional]
 ```
 
@@ -74,14 +74,12 @@ Add these singletons in Project Settings > Autoload:
 `world_gen.gd` now supports injected dependencies for plug-and-play use.
 
 - `chunks_root : Node3D` (required)
-- `object_placer : Node` (optional)
 - `interaction_tracker : Node` (optional)
 - `results_label : RichTextLabel` (optional)
 
 Fallback NodePaths are still available:
 
 - `chunks_root_path`
-- `object_placer_path`
 - `interaction_tracker_path`
 - `results_label_path`
 
@@ -102,14 +100,15 @@ Public API for external systems:
 2. Add autoloads `WorldMap` and `VoxelData`.
 3. Create a scene with one node running `world_gen.gd`.
 4. Assign `chunks_root` in inspector (or set `chunks_root_path`).
-5. Optionally assign `object_placer`, `interaction_tracker`, and `results_label`.
+5. Optionally assign `interaction_tracker` and `results_label`.
 6. Create or copy one `GenerationSettings` resource and assign it to `world_gen.gd`.
 7. Set `GenerationSettings.material` and ensure atlas mapping in `VoxelData.tile_map` is valid.
 8. Disable gameplay extras first:
    - `spawn_villages_and_units = false`
    - `initialize_interaction = false` if no interaction system in target project
 9. Run generation once, verify mesh and collision.
-10. Re-enable optional systems (villages, units, pathfinding) one by one.
+10. If using villages/units, add `ObjectPlacer` node and connect it to `world_generated` signal (manual or auto-connect).
+11. Re-enable optional systems (villages, units, pathfinding) one by one.
 
 ## Generation flow details
 
@@ -125,9 +124,10 @@ Public API for external systems:
    - builds hex prism mesh with atlas UVs
    - updates `WorldMap` dictionaries
 6. Add returned `Chunk` to `chunks_root` and initialize collider/layers.
-7. Optionally place villages and units.
-8. Optionally initialize interaction tracker.
-9. Emit `world_generated` signal.
+7. Emit `world_generated` signal.
+8. Optional listeners (for example `ObjectPlacer`) react and place villages/units.
+9. Optionally initialize interaction tracker.
+10. Generation complete.
 
 ## Key GenerationSettings controls
 
@@ -147,9 +147,9 @@ Public API for external systems:
 
 Generator now logs error and aborts if no `chunks_root` can be resolved.
 
-### 2) Optional systems left enabled without dependencies
+### 2) Listener not connected
 
-If `spawn_villages_and_units` is true but `object_placer` is missing, generator warns and skips placement.
+If `ObjectPlacer` is present but not connected to `world_generated`, no villages/units spawn even when `spawn_villages_and_units` is true.
 
 ### 3) Atlas mismatch causes wrong textures
 
