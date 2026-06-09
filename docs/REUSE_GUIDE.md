@@ -71,51 +71,63 @@ Add these singletons in Project Settings > Autoload:
 
 ## Scene contract expected by world_gen.gd
 
-Current `world_gen.gd` uses hardcoded relative node paths.
+`world_gen.gd` now supports injected dependencies for plug-and-play use.
 
-- `../Interaction_tracker`
-- `../../Chunks`
-- `../../Control/VBoxContainer/RichTextLabel`
+- `chunks_root : Node3D` (required)
+- `object_placer : Node` (optional)
+- `interaction_tracker : Node` (optional)
+- `results_label : RichTextLabel` (optional)
 
-And one exported dependency:
+Fallback NodePaths are still available:
 
-- `object_placer : ObjectPlacer`
+- `chunks_root_path`
+- `object_placer_path`
+- `interaction_tracker_path`
+- `results_label_path`
 
-If target project has different scene tree, do one of these:
+Behavior toggles:
 
-1. Recreate same node structure.
-2. Refactor `world_gen.gd` to exported NodePaths for chunks, label, and interaction tracker.
-3. Remove optional calls (`object_placer` and `interaction_tracker`) for pure terrain-only generation.
+- `generate_on_ready`
+- `initialize_interaction`
+- `log_results_to_label`
+
+Public API for external systems:
+
+- `regenerate_world()`
+- `world_generated(chunk, voxel_count)` signal
 
 ## Migration checklist (recommended order)
 
 1. Copy required scripts and resources into target project.
 2. Add autoloads `WorldMap` and `VoxelData`.
-3. Create a scene with:
-   - One node running `world_gen.gd`
-   - One `Chunks` `Node3D` parent target for generated chunk instances
-4. Create or copy one `GenerationSettings` resource and assign it to `world_gen.gd`.
-5. Set `GenerationSettings.material` and ensure atlas mapping in `VoxelData.tile_map` is valid.
-6. Disable gameplay extras first:
+3. Create a scene with one node running `world_gen.gd`.
+4. Assign `chunks_root` in inspector (or set `chunks_root_path`).
+5. Optionally assign `object_placer`, `interaction_tracker`, and `results_label`.
+6. Create or copy one `GenerationSettings` resource and assign it to `world_gen.gd`.
+7. Set `GenerationSettings.material` and ensure atlas mapping in `VoxelData.tile_map` is valid.
+8. Disable gameplay extras first:
    - `spawn_villages_and_units = false`
-   - skip interaction tracker init if not present
-7. Run generation once, verify mesh and collision.
-8. Re-enable optional systems (villages, units, pathfinding) one by one.
+   - `initialize_interaction = false` if no interaction system in target project
+9. Run generation once, verify mesh and collision.
+10. Re-enable optional systems (villages, units, pathfinding) one by one.
 
 ## Generation flow details
 
 `world_gen.gd` flow:
 
-1. Clear map state and old chunk children.
-2. Apply settings and initialize random seed.
-3. `GridMapper.calculate_map_positions()` builds full voxel position list by shape.
-4. `VoxelGenerator.generate_chunk()`:
+1. Resolve dependencies from direct exports or fallback paths.
+2. Clear map state and old chunk children.
+3. Apply settings and initialize random seed.
+4. `GridMapper.calculate_map_positions()` builds full voxel position list by shape.
+5. `VoxelGenerator.generate_chunk()`:
    - normalizes noise
    - marks air/solid from `GenerationSettings`
    - builds hex prism mesh with atlas UVs
    - updates `WorldMap` dictionaries
-5. Add returned `Chunk` to `Chunks` node and initialize collider/layers.
-6. Optionally place villages and units.
+6. Add returned `Chunk` to `chunks_root` and initialize collider/layers.
+7. Optionally place villages and units.
+8. Optionally initialize interaction tracker.
+9. Emit `world_generated` signal.
 
 ## Key GenerationSettings controls
 
@@ -131,15 +143,13 @@ If target project has different scene tree, do one of these:
 
 ## Common pitfalls
 
-### 1) Regeneration leaves stale `surface_layer` entries
+### 1) `chunks_root` not assigned
 
-`WorldMap.clear_map()` currently clears only `map_as_dict`, not `surface_layer`.
+Generator now logs error and aborts if no `chunks_root` can be resolved.
 
-If you regenerate often at runtime, clear both dictionaries before new generation.
+### 2) Optional systems left enabled without dependencies
 
-### 2) Scene tree mismatch causes null node paths
-
-`world_gen.gd` assumes specific relative paths for UI and interaction tracker. If absent, generation may fail after mesh creation step.
+If `spawn_villages_and_units` is true but `object_placer` is missing, generator warns and skips placement.
 
 ### 3) Atlas mismatch causes wrong textures
 
@@ -149,9 +159,8 @@ If you regenerate often at runtime, clear both dictionaries before new generatio
 
 For long-term reuse, consider this small refactor set:
 
-1. Convert hardcoded node paths in `world_gen.gd` into exported NodePaths.
-2. Split generation core from gameplay hooks (object placement and interaction init).
-3. Add explicit `WorldMap.reset()` that clears all runtime dictionaries.
-4. Move atlas constants from `voxel_generator.gd` into configurable resource.
+1. Move atlas constants from `voxel_generator.gd` into configurable resource.
+2. Add deterministic RNG abstraction instead of global `randi()` for fully reproducible generation sessions.
+3. Add generation strategy interface if you want to swap different terrain algorithms behind same `world_gen.gd` node.
 
 This keeps generator portable across projects with different scene trees and art pipelines.

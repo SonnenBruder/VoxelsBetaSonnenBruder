@@ -140,4 +140,4 @@ stretch_mode = 4
 
 [node name="Chunks" type="Node3D" parent="." unique_id=1512669309]
 
-[connection signal="pressed" from="Control/VBoxContainer/Button" to="Builder/WorldGenerator" method="_ready"]
+[connection signal="pressed" from="Control/VBoxContainer/Button" to="Builder/WorldGenerator" method="regenerate_world"]

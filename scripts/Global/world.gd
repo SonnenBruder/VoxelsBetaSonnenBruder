@@ -10,6 +10,7 @@ var surface_layer: Dictionary[Vector3i, Voxel] = {}
 ## Construct a dictionary for our 2d top layer of voxels
 func set_map(all_voxels, top_voxels):
 	map_as_dict.clear()
+	surface_layer.clear()
 	for voxel : Voxel in all_voxels:
 		map_as_dict[Vector3i(voxel.grid_position_xyz)] = voxel
 	for t_voxel in top_voxels:
@@ -18,6 +19,9 @@ func set_map(all_voxels, top_voxels):
 
 func clear_map():
 	map_as_dict.clear()
+	surface_layer.clear()
+	noise_range = Vector2.ZERO
+	world_settings = null
 
 
 ## Handy function for finding all neigbors of a voxel
