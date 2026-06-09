@@ -19,8 +19,9 @@ flowchart TD
     C --> D[VoxelGenerator]
     D --> E[Chunk mesh + collider]
     D --> F[WorldMap map_as_dict + surface_layer]
-   A -->|world_generated signal| G[ObjectPlacer listener optional]
-    A --> H[Interaction tracker optional]
+                                                                                                   A -->|world_generated| G[ObjectPlacer listener optional]
+   A -->|world_generated| H[Interaction tracker listener optional]
+   A -->|generation_profile_ready| I[GenerationReportLabel listener optional]
 ```
 
 ## Required files
@@ -51,6 +52,7 @@ Copy these files as baseline generator package.
 - `scripts/WorldGen/object_placer.gd`
 - `scripts/pathfinder.gd`
 - `scripts/interaction.gd`
+- `scripts/WorldGen/generation_report_label.gd`
 - `scripts/unit.gd`
 
 ### Currently unused in runtime generation path
@@ -74,25 +76,55 @@ Add these singletons in Project Settings > Autoload:
 `world_gen.gd` now supports injected dependencies for plug-and-play use.
 
 - `chunks_root : Node3D` (required)
-- `interaction_tracker : Node` (optional)
-- `results_label : RichTextLabel` (optional)
 
 Fallback NodePaths are still available:
 
 - `chunks_root_path`
-- `interaction_tracker_path`
-- `results_label_path`
 
 Behavior toggles:
 
 - `generate_on_ready`
-- `initialize_interaction`
-- `log_results_to_label`
 
 Public API for external systems:
 
 - `regenerate_world()`
 - `world_generated(chunk, voxel_count)` signal
+- `generation_profile_ready(profile)` signal
+
+## Variable reference (exported)
+
+### `world_gen.gd`
+
+- `settings`: `GenerationSettings` resource used for current generation run.
+- `chunks_root`: `Node3D` parent receiving generated chunk instances.
+- `chunks_root_path`: fallback path used to resolve `chunks_root` if unset.
+- `generate_on_ready`: if true, auto-start generation in `_ready()`.
+
+### `object_placer.gd`
+
+- `world_generator`: signal source for `world_generated`.
+- `world_generator_path`: fallback path for resolving `world_generator`.
+- `auto_connect`: if true, listener auto-connects in `_ready()`.
+- `village`: village scene spawned on valid placeable voxels.
+- `proto_unit`: unit scene used for starting unit placement.
+
+### `interaction.gd`
+
+- `world_generator`: signal source for initialization after generation.
+- `world_generator_path`: fallback path for resolving `world_generator`.
+- `auto_connect_world_generator`: auto-connect behavior for generation listener.
+- `voxel_cursor_scene`: scene used for voxel cursor visuals.
+- `unit_cursor_scene`: scene used for unit cursor visuals.
+- `main_camera`: camera used for click raycasting.
+- `p_finder`: pathfinder used for reachable-tiles highlighting.
+- `selection_indicator`: UI texture swapped between select/build modes.
+
+### `generation_report_label.gd`
+
+- `world_generator`: signal source for generation timing profile updates.
+- `world_generator_path`: fallback path for resolving `world_generator`.
+- `auto_connect`: if true, listener auto-connects in `_ready()`.
+- `seconds_threshold_ms`: threshold for switching total duration display from ms to seconds.
 
 ## Migration checklist (recommended order)
 
@@ -100,12 +132,14 @@ Public API for external systems:
 2. Add autoloads `WorldMap` and `VoxelData`.
 3. Create a scene with one node running `world_gen.gd`.
 4. Assign `chunks_root` in inspector (or set `chunks_root_path`).
-5. Optionally assign `interaction_tracker` and `results_label`.
+5. Add optional listeners you need:
+   - `ObjectPlacer` listening to `world_generated`
+   - `Interaction_tracker` listening to `world_generated`
+   - `GenerationReportLabel` listening to `generation_profile_ready`
 6. Create or copy one `GenerationSettings` resource and assign it to `world_gen.gd`.
 7. Set `GenerationSettings.material` and ensure atlas mapping in `VoxelData.tile_map` is valid.
 8. Disable gameplay extras first:
    - `spawn_villages_and_units = false`
-   - `initialize_interaction = false` if no interaction system in target project
 9. Run generation once, verify mesh and collision.
 10. If using villages/units, add `ObjectPlacer` node and connect it to `world_generated` signal (manual or auto-connect).
 11. Re-enable optional systems (villages, units, pathfinding) one by one.
@@ -124,9 +158,9 @@ Public API for external systems:
    - builds hex prism mesh with atlas UVs
    - updates `WorldMap` dictionaries
 6. Add returned `Chunk` to `chunks_root` and initialize collider/layers.
-7. Emit `world_generated` signal.
-8. Optional listeners (for example `ObjectPlacer`) react and place villages/units.
-9. Optionally initialize interaction tracker.
+7. Build generation profile and emit `generation_profile_ready`.
+8. Emit `world_generated` signal.
+9. Optional listeners react (placement, interaction initialization, UI updates).
 10. Generation complete.
 
 ## Key GenerationSettings controls
@@ -150,6 +184,8 @@ Generator now logs error and aborts if no `chunks_root` can be resolved.
 ### 2) Listener not connected
 
 If `ObjectPlacer` is present but not connected to `world_generated`, no villages/units spawn even when `spawn_villages_and_units` is true.
+
+Same pattern for `Interaction_tracker` and `GenerationReportLabel`: no signal connection means no initialization/update.
 
 ### 3) Atlas mismatch causes wrong textures
 

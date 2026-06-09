@@ -2,12 +2,17 @@ extends Node
 class_name ObjectPlacer
 
 @export_category("Dependencies")
+## World generator node emitting world_generated signal.
 @export var world_generator : Node
+## Fallback path used to locate world_generator when export unset.
 @export var world_generator_path: NodePath = ^"../WorldGenerator"
+## Auto-connect to world_generated signal on _ready.
 @export var auto_connect := true
 
 @export_category("Scenes")
+## Village scene instantiated on selected placeable tiles.
 @export var village : PackedScene
+## Unit prototype scene spawned as starting units.
 @export var proto_unit : PackedScene
 
 

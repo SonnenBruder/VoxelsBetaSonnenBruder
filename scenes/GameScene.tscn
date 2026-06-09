@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://cqxjxq25t6wuy" path="res://scenes/Cursors/unit_cursor.tscn" id="11_w22tq"]
 [ext_resource type="Script" uid="uid://8c4mygj6ghrg" path="res://scripts/interaction.gd" id="12_tt8b8"]
 [ext_resource type="Texture2D" uid="uid://cctpnojcm20kn" path="res://assets/selectsprite.png" id="13_w22tq"]
+[ext_resource type="Script" uid="uid://digexx8sopfxv" path="res://scripts/WorldGen/generation_report_label.gd" id="14_j2cw2"]
 
 [sub_resource type="Environment" id="Environment_f2ci6"]
 background_mode = 3
@@ -85,7 +86,7 @@ settings = ExtResource("4_58wc8")
 
 [node name="ObjectPlacer" type="Node" parent="Builder" unique_id=2102657466 node_paths=PackedStringArray("world_generator")]
 script = ExtResource("9_p13dw")
-world_generator = NodePath("../Pathfinder")
+world_generator = NodePath("../WorldGenerator")
 village = ExtResource("7_yrli1")
 proto_unit = ExtResource("8_r58of")
 
@@ -93,8 +94,9 @@ proto_unit = ExtResource("8_r58of")
 script = ExtResource("10_0b4my")
 highlight_marker = ExtResource("9_6pl24")
 
-[node name="Interaction_tracker" type="Node3D" parent="Builder" unique_id=954510790 node_paths=PackedStringArray("main_camera", "p_finder", "selection_indicator")]
+[node name="Interaction_tracker" type="Node3D" parent="Builder" unique_id=954510790 node_paths=PackedStringArray("world_generator", "main_camera", "p_finder", "selection_indicator")]
 script = ExtResource("12_tt8b8")
+world_generator = NodePath("../WorldGenerator")
 voxel_cursor_scene = ExtResource("10_6pl24")
 unit_cursor_scene = ExtResource("11_w22tq")
 main_camera = NodePath("../../CameraParent/Camera3D")
@@ -116,13 +118,15 @@ offset_bottom = 80.0
 layout_mode = 2
 text = "Generate"
 
-[node name="RichTextLabel" type="RichTextLabel" parent="Control/VBoxContainer" unique_id=767895136]
+[node name="RichTextLabel" type="RichTextLabel" parent="Control/VBoxContainer" unique_id=767895136 node_paths=PackedStringArray("world_generator")]
 layout_mode = 2
 bbcode_enabled = true
 text = "Text Here"
 fit_content = true
 scroll_active = false
 autowrap_mode = 0
+script = ExtResource("14_j2cw2")
+world_generator = NodePath("../../../Builder/WorldGenerator")
 
 [node name="TextureRect" type="TextureRect" parent="Control" unique_id=252407764]
 layout_mode = 1

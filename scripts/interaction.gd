@@ -1,48 +1,105 @@
 extends Node3D
 
 enum mode {SELECT, BUILD}
+## Current interaction mode for click behavior.
 var interact_mode : mode = mode.SELECT
+@export_category("Dependencies")
+## World generator node that emits world_generated.
+@export var world_generator : Node
+## Fallback path for resolving world_generator.
+@export var world_generator_path: NodePath = ^"../WorldGenerator"
+## Auto-connect listener to world generation signal.
+@export var auto_connect_world_generator := true
+
+@export_category("Cursor")
+## Scene used for voxel selection cursor.
 @export var voxel_cursor_scene : PackedScene
+## Scene used for unit selection cursor.
 @export var unit_cursor_scene : PackedScene
+## Camera used for mouse raycasting into world.
 @export var main_camera : Camera3D
+## Pathfinder used for movement range and highlights.
 @export var p_finder : Pathfinder
+## HUD indicator sprite switched by interaction mode.
 @export var selection_indicator : TextureRect
+## Sprite shown when build mode is active.
 const BUILDSPRITE = preload("uid://cgpb4pbfvd0q3")
+## Sprite shown when select mode is active.
 const SELECTSPRITE = preload("uid://cctpnojcm20kn")
 
+## Currently selected voxel under cursor.
 var selected_voxel : Voxel
+## Currently selected unit for movement commands.
 var selected_unit : Unit
+## Cached reachable tiles for selected unit.
 var unit_moves : Array[Voxel]
 # Cursors
+## Instanced voxel cursor node.
 var voxel_cursor : Node3D
+## Instanced unit cursor node.
 var unit_cursor : Node3D
+## True after cursors and state finished first-time init.
 var initialized = false
 
-func init():
-	if initialized:
+
+func _ready() -> void:
+	if auto_connect_world_generator:
+		connect_to_world_generator()
+
+
+func connect_to_world_generator() -> void:
+	resolve_dependencies()
+	if world_generator == null:
+		push_warning("Interaction: world_generator missing, init listener disabled")
 		return
+	if not world_generator.has_signal("world_generated"):
+		push_warning("Interaction: world_generator has no world_generated signal")
+		return
+	var callback := Callable(self, "_on_world_generated")
+	if not world_generator.is_connected("world_generated", callback):
+		world_generator.connect("world_generated", callback)
+
+
+func resolve_dependencies() -> void:
+	if world_generator == null and not world_generator_path.is_empty():
+		world_generator = get_node_or_null(world_generator_path)
+
+
+func _on_world_generated(_chunk: Chunk, _voxel_count: int) -> void:
+	init()
+
+func init():
 	if not voxel_cursor or voxel_cursor == null:
 		voxel_cursor = voxel_cursor_scene.instantiate()
 		add_child(voxel_cursor)
 	if not unit_cursor:
 		unit_cursor = unit_cursor_scene.instantiate()
 		add_child(unit_cursor)
+	if WorldMap.world_settings == null:
+		push_warning("Interaction: world settings missing, cannot init cursors")
+		return
 	
 	var scalar = WorldMap.world_settings.voxel_size
-	voxel_cursor.scale_object_local(Vector3(scalar, 1.0, scalar))
+	voxel_cursor.scale = Vector3(scalar, 1.0, scalar)
 	deselect()
-	selection_indicator.texture = SELECTSPRITE
+	if selection_indicator:
+		selection_indicator.texture = SELECTSPRITE
 	initialized = true
 
 
 func _process(_delta: float) -> void:
+	if not initialized:
+		return
+
 	#mode select
 	if Input.is_action_just_pressed("Build"):
 		interact_mode = mode.BUILD
-		selection_indicator.texture = BUILDSPRITE
+		if selection_indicator:
+			selection_indicator.texture = BUILDSPRITE
 	elif Input.is_action_just_pressed("Select"):
 		interact_mode = mode.SELECT
-		selection_indicator.texture = SELECTSPRITE
+		if selection_indicator:
+			selection_indicator.texture = SELECTSPRITE
 		
 	# Setup raycast
 	if Input.is_action_just_pressed("Click") or Input.is_action_just_pressed("RightClick"):
@@ -93,7 +150,8 @@ func deselect():
 	hide_cursor(unit_cursor)
 	unit_moves.clear()
 	selected_unit = null
-	p_finder.clear_highlight()
+	if p_finder:
+		p_finder.clear_highlight()
 
 
 func attempt_select(hit: HitData):
@@ -131,8 +189,9 @@ func select_unit(unit : Unit):
 	hide_cursor(voxel_cursor)
 	if unit is Unit:
 		highlight_unit(unit)
-		unit_moves = p_finder.find_reachable_voxels(unit.occupied_voxel, unit)
-		p_finder.highlight_voxel(unit_moves)
+		if p_finder:
+			unit_moves = p_finder.find_reachable_voxels(unit.occupied_voxel, unit)
+			p_finder.highlight_voxel(unit_moves)
 
 
 # We have clicked somewhere on a chunk of voxels
