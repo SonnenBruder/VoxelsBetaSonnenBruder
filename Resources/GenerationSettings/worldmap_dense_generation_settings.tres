@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="GenerationSettings" format=3]
+
+[ext_resource type="Script" path="res://scripts/WorldGen/generation_settings.gd" id="1"]
+[ext_resource type="Material" path="res://assets/Materials/testmat.tres" id="2"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_dense"]
+frequency = 0.092
+fractal_lacunarity = 1.81
+cellular_distance_function = 2
+cellular_return_type = 6
+domain_warp_frequency = -0.032
+domain_warp_fractal_type = 2
+
+[resource]
+script = ExtResource("1")
+map_shape = 0
+radius = 34
+max_height = 7
+terrace_steps = 2
+remove_overhang = true
+noise_height_bias = 0.20
+ground_to_air_ratio = 0.70
+flat_buffer = true
+noise = SubResource("FastNoiseLite_dense")
+variance = 0.015
+voxel_size = 1.0
+voxel_height = 1.0
+shading = -1
+material = ExtResource("2")
+draw_bottom = false
+solid_first_layer = true
+spawn_villages_and_units = true
+map_edge_buffer = 3
+spacing = 4
+metadata/_custom_type_script = "res://scripts/WorldGen/generation_settings.gd"

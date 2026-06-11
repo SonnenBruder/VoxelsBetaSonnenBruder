@@ -76,7 +76,11 @@ func generate_world():
 	print_generation_results(profile)
 	emit_signal("generation_profile_ready", profile)
 	emit_signal("world_generated", new_chunk, voxels.size())
-	#Debugger.draw_voxel_dictionary(WorldMap.surface_layer)
+	Debugger.draw_voxel_dictionary(WorldMap.surface_layer)
+	print("World generation complete! Total voxels: ", voxels.size())
+	print("Surface layer voxel count: ", WorldMap.surface_layer.size())
+	print("on Noise height bias slider value: ", settings.noise_height_bias)
+	print("Ground to air ratio: ", settings.ground_to_air_ratio)
 
 
 func build_generation_profile(start : float, timestamps : Dictionary) -> Dictionary:
@@ -115,3 +119,11 @@ func print_generation_results(profile : Dictionary):
 		display_total *= 0.001
 
 	print("Total completion time: ", display_total, unit)
+
+
+func _on_ground_to_air_ratio_slider_value_changed(value: float) -> void:
+	settings.ground_to_air_ratio = value
+
+
+func _on_noise_height_bias_slider_value_changed(value: float) -> void:
+	settings.noise_height_bias = value

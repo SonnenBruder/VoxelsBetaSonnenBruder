@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="GenerationSettings" format=3 uid="uid://d3cj0dog581yx"]
+
+[ext_resource type="Script" uid="uid://0k8jgfy8cqfx" path="res://scripts/WorldGen/generation_settings.gd" id="1"]
+[ext_resource type="Material" uid="uid://dcw7nje4jt2wj" path="res://assets/Materials/testmat.tres" id="2"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_battlefield"]
+frequency = 0.075
+fractal_lacunarity = 1.55
+cellular_distance_function = 2
+cellular_return_type = 6
+domain_warp_frequency = -0.01
+
+[resource]
+script = ExtResource("1")
+map_shape = 1
+radius = 18
+max_height = 5
+noise_height_bias = 0.33
+ground_to_air_ratio = 0.82
+flat_buffer = false
+noise = SubResource("FastNoiseLite_battlefield")
+variance = 0.005
+shading = 0
+material = ExtResource("2")
+map_edge_buffer = 1
+spacing = 3

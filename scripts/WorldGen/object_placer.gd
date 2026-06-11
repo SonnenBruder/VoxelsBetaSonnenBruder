@@ -119,12 +119,26 @@ func _on_world_generated(_chunk: Chunk, _voxel_count: int) -> void:
 	else:
 		push_warning("ObjectPlacer: unit_spawn_component missing")
 
+	var debug_summary := {}
+	if spawn_settings.debug_enabled:
+		debug_summary = build_spawn_debug_summary(
+			generation_settings,
+			placeable,
+			selected_villages,
+			requested_unit_count,
+			spawned_village_count,
+			spawned_unit_count
+		)
+		if spawn_settings.debug_print_spawn_summary:
+			print_spawn_debug_summary(debug_summary)
+
 	emit_signal("spawn_plan_ready", {
 		"selected_villages": selected_villages,
 		"selected_village_count": spawned_village_count,
 		"requested_unit_count": requested_unit_count,
 		"spawned_unit_count": spawned_unit_count,
-		"placeable_count": placeable.size()
+		"placeable_count": placeable.size(),
+		"debug_summary": debug_summary
 	})
 	emit_signal("spawns_completed", spawned_village_count, spawned_unit_count)
 
@@ -161,6 +175,49 @@ func spawn_on_tile(voxel : Voxel, scene : PackedScene) -> bool:
 	add_child(instance)
 	call_deferred("position_object", instance, voxel.world_position, 1)
 	return true
+
+
+func build_spawn_debug_summary(
+	generation_settings: GenerationSettings,
+	placeable: Array[Voxel],
+	selected_villages: Array[Voxel],
+	requested_unit_count: int,
+	spawned_village_count: int,
+	spawned_unit_count: int
+) -> Dictionary:
+	var top_weights = collect_top_weights(selected_villages, spawn_settings.debug_top_weight_samples)
+	return {
+		"map_radius": generation_settings.radius if generation_settings else 0,
+		"map_shape": generation_settings.map_shape if generation_settings else -1,
+		"placeable_count": placeable.size(),
+		"selected_village_count": spawned_village_count,
+		"requested_unit_count": requested_unit_count,
+		"spawned_unit_count": spawned_unit_count,
+		"weighting_profile": spawn_settings.weighting_profile,
+		"top_village_weights": top_weights
+	}
+
+
+func collect_top_weights(villages: Array[Voxel], limit: int) -> Array[float]:
+	var weights: Array[float] = []
+	for voxel in villages:
+		weights.append(voxel.village_weight)
+	weights.sort()
+	weights.reverse()
+	if limit <= 0 or weights.size() <= limit:
+		return weights
+	return weights.slice(0, limit)
+
+
+func print_spawn_debug_summary(summary: Dictionary) -> void:
+	print(
+		"[SpawnDebug] placeable=", summary.get("placeable_count", 0),
+		" villages=", summary.get("selected_village_count", 0),
+		" units=", summary.get("spawned_unit_count", 0),
+		"/", summary.get("requested_unit_count", 0),
+		" profile=", summary.get("weighting_profile", -1)
+	)
+	print("[SpawnDebug] top weights=", summary.get("top_village_weights", []))
 
 
 func position_object(object : Node3D, target_location : Vector3, add_height : float = 0):

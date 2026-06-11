@@ -54,6 +54,14 @@ enum WeightingProfile {BALANCED, CENTER_FOCUS, NOISE_FOCUS, SOLIDITY_FOCUS, CUST
 ## Safety attempts per requested unit when spawning units.
 @export_range(1, 50, 1) var max_unit_spawn_attempts_per_unit := 10
 
+@export_category("Debug")
+## Enables spawn planning debug output.
+@export var debug_enabled := false
+## Prints summary lines for each spawn execution.
+@export var debug_print_spawn_summary := true
+## Maximum number of top village weights included in debug summary.
+@export_range(0, 20, 1) var debug_top_weight_samples := 5
+
 
 func is_spawn_enabled(generation_settings: GenerationSettings) -> bool:
 	if use_generation_spawn_toggle:

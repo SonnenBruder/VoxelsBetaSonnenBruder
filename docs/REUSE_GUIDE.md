@@ -47,6 +47,13 @@ Copy these files as baseline generator package.
 - Material for generated mesh, referenced by `GenerationSettings.material`
 - Texture atlas coordinates in `VoxelData.tile_map` must match your atlas layout
 
+### Optional generation presets
+
+- `Resources/GenerationSettings/worldmap_balanced_generation_settings.tres`
+- `Resources/GenerationSettings/worldmap_dense_generation_settings.tres`
+- `Resources/GenerationSettings/battlefield_generation_settings.tres`
+- `Resources/GenerationSettings/no_spawn_generation_settings.tres`
+
 ### Optional scripts (only if you need gameplay layer)
 
 - `scripts/WorldGen/object_placer.gd`
@@ -63,6 +70,16 @@ Copy these files as baseline generator package.
 ### Optional spawn resources
 
 - `Resources/SpawnSettings/default_spawn_settings.tres`
+- `Resources/SpawnSettings/worldmap_dense_spawn_settings.tres`
+- `Resources/SpawnSettings/battlefield_spawn_settings.tres`
+- `Resources/SpawnSettings/no_spawn_settings.tres`
+
+### Optional scene variants
+
+- `scenes/Variants/GameScene_WorldBalanced.tscn`
+- `scenes/Variants/GameScene_WorldDense.tscn`
+- `scenes/Variants/GameScene_Battlefield.tscn`
+- `scenes/Variants/GameScene_NoSpawns.tscn`
 
 ### Currently unused in runtime generation path
 
@@ -142,6 +159,9 @@ Public API for external systems:
 - `units_per_village`: dynamic ratio for per-village unit mode.
 - `max_dynamic_unit_count`: cap for per-village unit mode.
 - `max_unit_spawn_attempts_per_unit`: unit placement safety attempts multiplier.
+- `debug_enabled`: enables spawn debug summary generation.
+- `debug_print_spawn_summary`: prints debug summary to output log.
+- `debug_top_weight_samples`: number of top village weights included in summary.
 
 ### `village_spawn_component.gd`
 
@@ -183,12 +203,16 @@ Public API for external systems:
    - `GenerationReportLabel` listening to `generation_profile_ready`
 6. Create or copy one `GenerationSettings` resource and assign it to `world_gen.gd`.
 7. Set `GenerationSettings.material` and ensure atlas mapping in `VoxelData.tile_map` is valid.
-8. Disable gameplay extras first:
-   - `spawn_villages_and_units = false`
-   - or set `SpawnSettings.use_generation_spawn_toggle = false` and `spawn_enabled_override = false`
-9. Run generation once, verify mesh and collision.
-10. If using villages/units, add `ObjectPlacer` node and connect it to `world_generated` signal (manual or auto-connect).
-11. Re-enable optional systems (villages, units, pathfinding) one by one.
+8. Create or assign one `SpawnSettings` resource to `ObjectPlacer.spawn_settings`.
+9. Optionally start from one preset scene under `scenes/Variants/`.
+10. Disable gameplay extras first:
+
+- `spawn_villages_and_units = false`
+- or set `SpawnSettings.use_generation_spawn_toggle = false` and `spawn_enabled_override = false`
+
+11. Run generation once, verify mesh and collision.
+12. If using villages/units, add `ObjectPlacer` node and connect it to `world_generated` signal (manual or auto-connect).
+13. Re-enable optional systems (villages, units, pathfinding) one by one.
 
 ## Generation flow details
 
@@ -227,6 +251,29 @@ Extension point for future features:
 - Replace `DefaultVoxelWeightStrategy` with scene-specific/custom weight strategy resources.
 - Keep `Voxel.village_weight` as shared score channel so other systems can reuse same ranking data.
 - Reuse same world generation in different scenes (world map, battlefield) by swapping only `SpawnSettings` and spawn components.
+
+## Spawn debugging
+
+Use `SpawnSettings` debug fields to inspect planning quality:
+
+1. Set `debug_enabled = true`.
+2. Keep `debug_print_spawn_summary = true`.
+3. Increase `debug_top_weight_samples` to inspect more ranked village candidates.
+
+When enabled, `ObjectPlacer` logs summary including:
+
+- placeable tile count
+- selected village count
+- requested vs spawned unit count
+- weighting profile id
+- top village weights from selected candidates
+
+Recommended workflow:
+
+1. Start with `scenes/Variants/GameScene_Battlefield.tscn` (debug already enabled in its spawn preset).
+2. Run generation multiple times with fixed seed.
+3. Tune `SpawnSettings` weighting profile and thresholds.
+4. Later replace default strategy with your own `VoxelWeightStrategy` resource.
 
 ## Key GenerationSettings controls
 
