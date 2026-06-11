@@ -1,7 +1,11 @@
 extends Node
 
 signal world_generated(chunk: Chunk, voxel_count: int)
+signal world_result_ready(result: VoxelWorldResult)
 signal generation_profile_ready(profile: Dictionary)
+
+const VoxelSurfaceTile = preload("res://scripts/WorldGen/voxel_surface_tile.gd")
+const VoxelWorldResult = preload("res://scripts/WorldGen/voxel_world_result.gd")
 
 # Dependencies
 ## Generation settings resource used for current world build.
@@ -17,6 +21,8 @@ signal generation_profile_ready(profile: Dictionary)
 @export_category("Behavior")
 ## Auto-run regeneration when node enters scene tree.
 @export var generate_on_ready := true
+
+var last_result: VoxelWorldResult
 
 
 ## Starting point: Generate random seed, create tiles, emit completion signal
@@ -73,10 +79,59 @@ func generate_world():
 	interval["Create Voxel Mesh -- "] = Time.get_ticks_msec()
 
 	var profile = build_generation_profile(starttime, interval)
+	last_result = build_world_result(new_chunk, voxels.size(), profile)
 	print_generation_results(profile)
 	emit_signal("generation_profile_ready", profile)
+	emit_signal("world_result_ready", last_result)
 	emit_signal("world_generated", new_chunk, voxels.size())
 	#Debugger.draw_voxel_dictionary(WorldMap.surface_layer)
+
+
+func get_last_result() -> VoxelWorldResult:
+	return last_result
+
+
+func get_surface_tile_at_coord(coord: Vector2i) -> VoxelSurfaceTile:
+	if last_result == null:
+		return null
+	return last_result.surface_tiles_by_coord.get(coord) as VoxelSurfaceTile
+
+
+func get_voxel_at_grid_coord(coord: Vector3i) -> Voxel:
+	if last_result == null:
+		return null
+	return last_result.full_voxels_by_grid.get(coord) as Voxel
+
+
+func build_world_result(chunk: Chunk, voxel_count: int, profile: Dictionary) -> VoxelWorldResult:
+	var result = VoxelWorldResult.new()
+	result.seed_used = settings.noise.seed
+	result.settings = settings
+	result.chunk = chunk
+	result.voxel_count = voxel_count
+	result.full_voxels_by_grid = WorldMap.map_as_dict.duplicate(false)
+	result.generation_profile = profile.duplicate(true)
+	result.noise_range = WorldMap.noise_range
+	result.surface_tiles_by_coord = build_surface_tiles_by_coord()
+	result.surface_count = result.surface_tiles_by_coord.size()
+	return result
+
+
+func build_surface_tiles_by_coord() -> Dictionary:
+	var surface_tiles: Dictionary = {}
+	for voxel: Voxel in WorldMap.surface_layer.values():
+		var tile = VoxelSurfaceTile.new()
+		tile.coord_2d = voxel.grid_position_xz
+		tile.top_grid_coord = voxel.grid_position_xyz
+		tile.world_position = voxel.world_position
+		tile.height = voxel.grid_position_xyz.y
+		tile.terrain_type = voxel.type
+		tile.is_empty = voxel.type == VoxelData.voxel_type.AIR
+		tile.passable = not voxel.water and voxel.type != VoxelData.voxel_type.AIR
+		tile.placeable = voxel.placeable and not voxel.buffer
+		tile.source_voxel = voxel
+		surface_tiles[tile.coord_2d] = tile
+	return surface_tiles
 
 
 func build_generation_profile(start : float, timestamps : Dictionary) -> Dictionary:
