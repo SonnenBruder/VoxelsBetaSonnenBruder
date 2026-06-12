@@ -1,13 +1,13 @@
 # Voxel Worldgen Architecture Map
 
-This document is the visual companion to [REUSE_GUIDE.md](REUSE_GUIDE.md). It shows how the current generator pieces are wired together and where future addon boundaries should land.
+This document is the visual companion to [REUSE_GUIDE.md](REUSE_GUIDE.md). It shows how the addon generator pieces are wired together and where the remaining placement boundary should land.
 
 ## Component Wiring
 
 ```mermaid
 flowchart LR
     subgraph Scene["Scene Nodes"]
-        GeneratorNode["WorldGenerator<br/>scripts/WorldGen/world_gen.gd"]
+        GeneratorNode["VoxelWorldGenerator<br/>addons/voxel_worldgen/world_generator.gd"]
         ChunksRoot["Chunks root<br/>Node3D"]
         ReportLabel["GenerationReportLabel<br/>optional UI listener"]
         ObjectPlacer["ObjectPlacer<br/>current placement listener"]
@@ -229,14 +229,14 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    subgraph WorldgenAddon["Future worldgen addon"]
+    subgraph WorldgenAddon["Voxel worldgen addon"]
         WG["WorldGenerator"]
         Result["VoxelWorldResult / VoxelSurfaceTile"]
         Preset["VoxelWorldPreset"]
         Terrain["Terrain strategies"]
         Weights["Weight strategies"]
         Atlas["VoxelAtlasSettings"]
-        MapData["WorldMap + VoxelData autoload requirement"]
+        MapData["WorldMap + VoxelData autoloads"]
     end
 
     subgraph PlacementAddon["Future placement addon"]

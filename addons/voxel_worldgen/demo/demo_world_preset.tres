@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="VoxelWorldPreset" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/voxel_worldgen/resources/voxel_world_preset.gd" id="1_preset"]
+[ext_resource type="Resource" path="res://addons/voxel_worldgen/demo/demo_generation_settings.tres" id="2_settings"]
+
+[resource]
+script = ExtResource("1_preset")
+generation_seed = 12345
+generation_settings = ExtResource("2_settings")
+include_full_voxel_map = true
+include_surface_map = true
+include_mesh_chunk = true
+include_debug_profile = true
+metadata_defaults = {"source": "voxel_worldgen_demo"}
+

@@ -28,7 +28,8 @@ Implemented:
 
 Not finished yet:
 
-- Files have not been moved into a real `addons/` folder.
+- Core worldgen files now live in `addons/voxel_worldgen`.
+- Old `scripts/WorldGen/...` and `scripts/Global/...` paths are compatibility wrappers for this project.
 - Placement is not split into a separate addon folder yet.
 - Terrain type/passability rules are still mostly inside `VoxelGenerator`.
 - `VoxelWorldPreset.write_to_world_map` is reserved for later; current generation still writes to `WorldMap`.
@@ -39,7 +40,7 @@ For a larger component map with sequence, signal, result, and future addon bound
 
 ```mermaid
 flowchart TD
-    A[WorldGenerator world_gen.gd] --> B[VoxelWorldPreset optional]
+    A[VoxelWorldGenerator addon/world_generator.gd] --> B[VoxelWorldPreset optional]
     A --> C[VoxelGenerationContext]
     C --> D[DefaultTerrainStrategy]
     D --> E[GridMapper]
@@ -59,7 +60,12 @@ flowchart TD
 
 ## Required Autoloads
 
-Add these in Project Settings > Autoload:
+When using the addon, enable **Project Settings > Plugins > Voxel Worldgen**. The plugin adds these autoloads if they are missing:
+
+- `VoxelData` -> `res://addons/voxel_worldgen/autoloads/voxel_data.gd`
+- `WorldMap` -> `res://addons/voxel_worldgen/autoloads/world_map.gd`
+
+This project still keeps compatibility autoload paths:
 
 - `VoxelData` -> `res://scripts/Global/voxel_data.gd`
 - `WorldMap` -> `res://scripts/Global/world.gd`
@@ -70,29 +76,25 @@ Add these in Project Settings > Autoload:
 
 ## Required Files
 
-Copy these for the generator core:
+For another project, copy the whole addon folder:
 
-- `scripts/WorldGen/world_gen.gd`
-- `scripts/WorldGen/generation_settings.gd`
-- `scripts/WorldGen/grid_mapper.gd`
-- `scripts/WorldGen/voxel_generation_context.gd`
-- `scripts/WorldGen/voxel_world_result.gd`
-- `scripts/WorldGen/voxel_surface_tile.gd`
-- `scripts/WorldGen/voxel_world_preset.gd`
-- `scripts/WorldGen/voxel_atlas_settings.gd`
-- `scripts/WorldGen/Terrain/voxel_terrain_strategy.gd`
-- `scripts/WorldGen/Terrain/default_terrain_strategy.gd`
-- `scripts/WorldGen/Weights/voxel_weight_strategy.gd`
-- `scripts/WorldGen/Weights/no_weight_strategy.gd`
-- `scripts/WorldGen/Weights/settlement_weight_strategy.gd`
-- `scripts/WorldGen/Voxel/voxel_generator.gd`
-- `scripts/WorldGen/Voxel/voxel.gd`
-- `scripts/WorldGen/Voxel/chunk.gd`
-- `scripts/Global/world.gd`
-- `scripts/Global/voxel_data.gd`
-- `scripts/hit_data.gd`
+- `addons/voxel_worldgen`
 
-For Godot 4.4+ projects, copy matching `.gd.uid` files when they exist. They help preserve scene/resource references.
+The addon contains:
+
+- `world_generator.gd`
+- autoload scripts in `autoloads/`
+- core mapper/data scripts in `core/`
+- runtime result classes in `runtime/`
+- settings and preset resources in `resources/`
+- terrain strategies in `terrain/`
+- voxel mesh/runtime classes in `voxel/`
+- weight strategies in `weights/`
+- a demo scene and resources in `demo/`
+
+For Godot 4.4+ projects, keep any generated `.gd.uid` files with the addon when they exist. They help preserve scene/resource references.
+
+The old `scripts/WorldGen/...` files in this repo are only compatibility wrappers. Do not copy them for a fresh project unless you also need old project paths.
 
 Optional gameplay/UI files:
 
@@ -143,13 +145,13 @@ The old placement path still works because `ObjectPlacer` can listen to the resu
 
 ## Quick Start In A New Project
 
-1. Copy the required scripts and resources.
-2. Add `VoxelData` and `WorldMap` as autoloads.
+1. Copy `addons/voxel_worldgen` into the new project.
+2. Enable the `Voxel Worldgen` plugin.
 3. Create a scene with:
-   - `WorldGenerator` node using `scripts/WorldGen/world_gen.gd`
+   - `VoxelWorldGenerator` node using `addons/voxel_worldgen/world_generator.gd`
    - `Chunks` node using `Node3D`
 4. Assign `WorldGenerator.chunks_root` to `Chunks`.
-5. Assign a `GenerationSettings` resource.
+5. Assign a `VoxelWorldPreset` or a `GenerationSettings` resource.
 6. Assign a material in `GenerationSettings.material`.
 7. Confirm `VoxelData.tile_map` matches your atlas.
 8. Run generation once with placement disabled.
@@ -157,7 +159,7 @@ The old placement path still works because `ObjectPlacer` can listen to the resu
 
 ## WorldGenerator Public API
 
-Path: `scripts/WorldGen/world_gen.gd`
+Path: `addons/voxel_worldgen/world_generator.gd`
 
 ### Exports
 
@@ -263,7 +265,7 @@ Path: `scripts/WorldGen/world_gen.gd`
 
 ### VoxelWorldResult
 
-Path: `scripts/WorldGen/voxel_world_result.gd`
+Path: `addons/voxel_worldgen/runtime/voxel_world_result.gd`
 
 Fields:
 
@@ -284,7 +286,7 @@ Fields:
 
 ### VoxelSurfaceTile
 
-Path: `scripts/WorldGen/voxel_surface_tile.gd`
+Path: `addons/voxel_worldgen/runtime/voxel_surface_tile.gd`
 
 Fields:
 
@@ -346,7 +348,7 @@ var voxel := world_generator.get_voxel_at_grid_coord(Vector3i(0, 2, 0))
 
 ## VoxelWorldPreset
 
-Path: `scripts/WorldGen/voxel_world_preset.gd`
+Path: `addons/voxel_worldgen/resources/voxel_world_preset.gd`
 
 Use a preset when you want one reusable resource that describes a generation role.
 
@@ -396,7 +398,7 @@ This means the same overworld encounter can regenerate the same battlefield.
 
 ## Deterministic RNG
 
-Path: `scripts/WorldGen/voxel_generation_context.gd`
+Path: `addons/voxel_worldgen/runtime/voxel_generation_context.gd`
 
 Each generation run gets a `VoxelGenerationContext`:
 
@@ -419,7 +421,7 @@ Rules:
 
 ## Atlas Settings
 
-Path: `scripts/WorldGen/voxel_atlas_settings.gd`
+Path: `addons/voxel_worldgen/resources/voxel_atlas_settings.gd`
 
 Fields:
 
@@ -443,9 +445,9 @@ Terrain type to tile mapping still lives in `VoxelData.tile_map`. Moving that in
 
 ## Terrain Strategies
 
-Base path: `scripts/WorldGen/Terrain/voxel_terrain_strategy.gd`
+Base path: `addons/voxel_worldgen/terrain/voxel_terrain_strategy.gd`
 
-Default path: `scripts/WorldGen/Terrain/default_terrain_strategy.gd`
+Default path: `addons/voxel_worldgen/terrain/default_terrain_strategy.gd`
 
 `DefaultTerrainStrategy` preserves the old flow:
 
@@ -478,7 +480,7 @@ Use this for battlefield terrain, alternate map shapes, biome-specific generatio
 
 ## Weight Strategies
 
-Base path: `scripts/WorldGen/Weights/voxel_weight_strategy.gd`
+Base path: `addons/voxel_worldgen/weights/voxel_weight_strategy.gd`
 
 Built-in strategies:
 
@@ -548,7 +550,7 @@ Recommended placement flow for new systems:
 
 ## GenerationSettings Controls
 
-Path: `scripts/WorldGen/generation_settings.gd`
+Path: `addons/voxel_worldgen/resources/generation_settings.gd`
 
 Important fields:
 
@@ -579,11 +581,11 @@ Important fields:
 
 For a new project:
 
-1. Copy required scripts and `.gd.uid` files.
+1. Copy `addons/voxel_worldgen`.
 2. Copy or recreate `GenerationSettings`.
 3. Copy or recreate material and atlas.
-4. Add `VoxelData` and `WorldMap` autoloads.
-5. Create a scene with `WorldGenerator` and `Chunks`.
+4. Enable the plugin so `VoxelData` and `WorldMap` autoloads are added.
+5. Create a scene with `VoxelWorldGenerator` and `Chunks`.
 6. Assign `chunks_root`.
 7. Assign either `settings` directly or a `VoxelWorldPreset`.
 8. Run with `spawn_villages_and_units = false`.
@@ -645,7 +647,7 @@ Use a result until the next regeneration. After regeneration, listen for the new
 ### Custom Weight Strategy
 
 ```gdscript
-extends "res://scripts/WorldGen/Weights/voxel_weight_strategy.gd"
+extends "res://addons/voxel_worldgen/weights/voxel_weight_strategy.gd"
 class_name CoverWeightStrategy
 
 func get_weight_id() -> StringName:
@@ -663,7 +665,7 @@ Assign it to `WorldGenerator.weight_strategies` or `VoxelWorldPreset.weight_stra
 ### Custom Terrain Strategy
 
 ```gdscript
-extends "res://scripts/WorldGen/Terrain/voxel_terrain_strategy.gd"
+extends "res://addons/voxel_worldgen/terrain/voxel_terrain_strategy.gd"
 class_name FlatTestTerrainStrategy
 
 func generate(context) -> Dictionary:
@@ -685,7 +687,7 @@ This example still uses the old mapper/generator internally. A real strategy can
 
 ## Current Limitations
 
-- This is not packaged as a Godot addon yet.
+- The core generator is packaged as `addons/voxel_worldgen`.
 - `ObjectPlacer` still lives under `scripts/WorldGen`.
 - `VoxelGenerator.assign_type()` still contains hardcoded terrain assignment rules.
 - `VoxelData.tile_map` still owns terrain type to atlas tile mapping.
@@ -694,8 +696,8 @@ This example still uses the old mapper/generator internally. A real strategy can
 
 ## Recommended Next Steps
 
-1. Move or duplicate worldgen core into an `addons/voxel_worldgen` folder.
-2. Move `ObjectPlacer` into a placement module/addon.
-3. Convert terrain assignment into terrain rule resources.
-4. Move `VoxelData.tile_map` into a palette/material resource.
-5. Add a small demo scene that uses only `WorldGenerator`, `GenerationSettings`, and result listeners.
+1. Move `ObjectPlacer` into a placement module/addon.
+2. Convert terrain assignment into terrain rule resources.
+3. Move `VoxelData.tile_map` into a palette/material resource.
+4. Replace old scene script paths with addon paths when you are ready to remove wrappers.
+5. Add more demo presets for battlefield and overworld variants.

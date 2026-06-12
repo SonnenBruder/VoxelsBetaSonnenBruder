@@ -1,10 +1,2 @@
-extends RefCounted
-class_name VoxelGenerationContext
+extends "res://addons/voxel_worldgen/runtime/voxel_generation_context.gd"
 
-var settings: GenerationSettings
-var requested_seed: int
-var seed_used: int
-var random: RandomNumberGenerator
-var atlas_settings: Resource
-var interval: Dictionary = {}
-var metadata: Dictionary = {}

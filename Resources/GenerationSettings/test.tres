@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="GenerationSettings" format=3 uid="uid://ckxwwmtqxkujw"]
+[gd_resource type="Resource" format=3 uid="uid://ckxwwmtqxkujw"]
 
 [ext_resource type="Script" uid="uid://0k8jgfy8cqfx" path="res://scripts/WorldGen/generation_settings.gd" id="1_eiv65"]
 [ext_resource type="Material" uid="uid://dcw7nje4jt2wj" path="res://assets/Materials/testmat.tres" id="1_x67sk"]
