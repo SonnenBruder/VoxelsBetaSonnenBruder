@@ -5,11 +5,9 @@ var map_dict : Dictionary[Vector3i, Voxel]
 const sides = 6
 var settings : GenerationSettings
 var surface_voxels : Array[Voxel]
+var atlas_settings: Resource
 
-const ATLAS_RES   = Vector2i(512, 512)	# full atlas resolution in pixels
-const TILE_SIZE   = Vector2i(16, 16)	# usable area of one tile
-const TILE_STRIDE = Vector2i(18, 18)	# includes padding
-const TILE_MARGIN = Vector2i(5, 5)		# margin before first tile, always +1 of the actual padded border
+const VOXEL_ATLAS_SETTINGS_SCRIPT = preload("res://scripts/WorldGen/voxel_atlas_settings.gd")
 
 # Define base hexagon
 const base_vertices = [
@@ -25,6 +23,8 @@ const base_vertices = [
 func generate_chunk(_map : Array[Voxel], interval) -> Chunk:
 	map = _map
 	settings = WorldMap.world_settings
+	if atlas_settings == null:
+		atlas_settings = VOXEL_ATLAS_SETTINGS_SCRIPT.new()
 	var verts = PackedVector3Array()
 	var indices = PackedInt32Array()
 	var uvs = PackedVector2Array()
@@ -306,12 +306,16 @@ func build_hex_prism(voxel: Voxel) -> Dictionary:
 
 func atlas_uv(local_uv: Vector2, tile: Vector2i) -> Vector2:
 	# Pixel bounds of usable tile
-	var pixel_min: Vector2i = TILE_MARGIN + tile * TILE_STRIDE
-	var pixel_max: Vector2i = pixel_min + TILE_SIZE
+	var tile_margin: Vector2i = atlas_settings.get("tile_margin")
+	var tile_stride: Vector2i = atlas_settings.get("tile_stride")
+	var tile_size: Vector2i = atlas_settings.get("tile_size")
+	var atlas_resolution: Vector2i = atlas_settings.get("atlas_resolution")
+	var pixel_min: Vector2i = tile_margin + tile * tile_stride
+	var pixel_max: Vector2i = pixel_min + tile_size
 	
 	# Convert to normalized [0..1] UVs
-	var uv_min: Vector2 = Vector2(pixel_min) / Vector2(ATLAS_RES)
-	var uv_max: Vector2 = Vector2(pixel_max) / Vector2(ATLAS_RES)
+	var uv_min: Vector2 = Vector2(pixel_min) / Vector2(atlas_resolution)
+	var uv_max: Vector2 = Vector2(pixel_max) / Vector2(atlas_resolution)
 	
 	# Map local_uv [0..1] into this rectangle
 	return uv_min + local_uv * (uv_max - uv_min)

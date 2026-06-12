@@ -3,11 +3,16 @@ class_name GridMapper
 
 var settings : GenerationSettings
 var noise_range := Vector2(99999, -99999) 
+var random: RandomNumberGenerator
 
 ## Main entry point, Get all positions to spawn tiles on
 func calculate_map_positions() -> Array[Voxel]:
 	var voxels : Array[Voxel]
 	settings = WorldMap.world_settings
+	noise_range = Vector2(99999, -99999)
+	if random == null:
+		random = RandomNumberGenerator.new()
+		random.seed = settings.noise.seed
 
 	## Diamond and Circle also use the rectangular bounds. They carve our their shape from that rectangle
 	## using their individual shape filters 
@@ -78,7 +83,10 @@ func tile_to_world(pos, stagger: bool) -> Vector3:
 
 # Get noise at position of tile
 func noise_at_tile(pos : Vector3, texture : FastNoiseLite) -> float:
-	var value : float = texture.get_noise_3dv(pos) + randf_range(-settings.variance, settings.variance) 
+	var variance := 0.0
+	if settings.variance > 0.0:
+		variance = random.randf_range(-settings.variance, settings.variance)
+	var value : float = texture.get_noise_3dv(pos) + variance
 	#var normalized_value = (value + 1.0) * 0.5
 	
 	if value < noise_range.x:

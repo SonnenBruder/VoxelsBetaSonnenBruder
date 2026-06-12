@@ -8,12 +8,14 @@ enum VillageSpawnMode {SPACING_FILL, TARGET_COUNT}
 enum UnitSpawnMode {RADIUS_BASED, FIXED_COUNT, PER_VILLAGE}
 
 @export_category("Dependencies")
-## World generator node emitting world_generated signal.
+## World generator node emitting world_result_ready/world_generated signals.
 @export var world_generator : Node
 ## Fallback path used to locate world_generator when export unset.
 @export var world_generator_path: NodePath = ^"../WorldGenerator"
-## Auto-connect to world_generated signal on _ready.
+## Auto-connect to generator signal on _ready.
 @export var auto_connect := true
+## Prefer VoxelWorldResult input when the generator supports it.
+@export var prefer_world_result_signal := true
 
 @export_category("Village Spawn Rules")
 ## Village placement strategy: fill by spacing or stop at target count.
@@ -38,6 +40,8 @@ enum UnitSpawnMode {RADIUS_BASED, FIXED_COUNT, PER_VILLAGE}
 @export_range(0.0, 5.0, 0.05) var noise_weight_factor := 0.35
 ## Contribution of solidity proxy in placeholder weight function.
 @export_range(0.0, 5.0, 0.05) var solidity_weight_factor := 0.20
+## Weight channel to read from VoxelSurfaceTile.weights before falling back to placeholder scoring.
+@export var result_weight_id: StringName = &"settlement"
 
 @export_category("Unit Spawn Rules")
 ## Unit spawn strategy resolved after villages are selected.
@@ -55,6 +59,8 @@ enum UnitSpawnMode {RADIUS_BASED, FIXED_COUNT, PER_VILLAGE}
 ## Unit prototype scene spawned as starting units.
 @export var proto_unit : PackedScene
 
+var current_result: VoxelWorldResult
+
 
 func _ready() -> void:
 	if auto_connect:
@@ -66,12 +72,20 @@ func connect_to_world_generator() -> void:
 	if world_generator == null:
 		push_warning("ObjectPlacer: world_generator missing, placement listener disabled")
 		return
-	if not world_generator.has_signal("world_generated"):
-		push_warning("ObjectPlacer: world_generator has no world_generated signal")
+
+	if prefer_world_result_signal and world_generator.has_signal("world_result_ready"):
+		var result_callback := Callable(self, "_on_world_result_ready")
+		if not world_generator.is_connected("world_result_ready", result_callback):
+			world_generator.connect("world_result_ready", result_callback)
 		return
-	var callback := Callable(self, "_on_world_generated")
-	if not world_generator.is_connected("world_generated", callback):
-		world_generator.connect("world_generated", callback)
+
+	if world_generator.has_signal("world_generated"):
+		var callback := Callable(self, "_on_world_generated")
+		if not world_generator.is_connected("world_generated", callback):
+			world_generator.connect("world_generated", callback)
+		return
+
+	push_warning("ObjectPlacer: world_generator has no supported generation signal")
 
 
 func resolve_dependencies() -> void:
@@ -80,18 +94,28 @@ func resolve_dependencies() -> void:
 
 
 func _on_world_generated(_chunk: Chunk, _voxel_count: int) -> void:
+	run_placement(null)
+
+
+func _on_world_result_ready(result: VoxelWorldResult) -> void:
+	run_placement(result)
+
+
+func run_placement(result: VoxelWorldResult) -> void:
+	current_result = result
 	clear_objects()
-	var settings := WorldMap.world_settings
+	var settings := result.settings if result != null else WorldMap.world_settings
 	if settings == null or not settings.spawn_villages_and_units:
 		emit_signal("spawns_completed", 0, 0)
 		return
 
-	var placeable = get_placeable_voxels()
+	var placeable = get_placeable_voxels(result)
 	if placeable.is_empty():
 		emit_signal("spawns_completed", 0, 0)
 		return
 
-	distribute_village_weights_placeholder(placeable, settings)
+	if not apply_result_weights(placeable, result):
+		distribute_village_weights_placeholder(placeable, settings)
 	var selected_villages = select_village_tiles(placeable, settings.spacing)
 	spawn_villages(selected_villages)
 
@@ -106,8 +130,18 @@ func _on_world_generated(_chunk: Chunk, _voxel_count: int) -> void:
 	emit_signal("spawns_completed", selected_villages.size(), unit_count)
 
 
-func get_placeable_voxels() -> Array[Voxel]:
+func get_placeable_voxels(result: VoxelWorldResult = null) -> Array[Voxel]:
 	var placeable_tiles : Array[Voxel] = []
+	if result != null and not result.surface_tiles_by_coord.is_empty():
+		for tile: VoxelSurfaceTile in result.surface_tiles_by_coord.values():
+			if not tile.placeable or not tile.passable or tile.is_empty or tile.source_voxel == null:
+				continue
+			if not tile.source_voxel.placeable:
+				continue
+			placeable_tiles.append(tile.source_voxel)
+		print(str(placeable_tiles.size()) + " placeable tiles")
+		return placeable_tiles
+
 	for key in WorldMap.surface_layer:
 		var voxel = WorldMap.surface_layer[key]
 		if voxel.buffer or not voxel.placeable:
@@ -115,6 +149,20 @@ func get_placeable_voxels() -> Array[Voxel]:
 		placeable_tiles.append(voxel)
 	print(str(placeable_tiles.size()) + " placeable tiles")
 	return placeable_tiles
+
+
+func apply_result_weights(tiles: Array[Voxel], result: VoxelWorldResult) -> bool:
+	if result == null or result.surface_tiles_by_coord.is_empty():
+		return false
+
+	var applied := false
+	for voxel in tiles:
+		var tile = result.surface_tiles_by_coord.get(voxel.grid_position_xz) as VoxelSurfaceTile
+		if tile == null or not tile.weights.has(result_weight_id):
+			continue
+		voxel.village_weight = float(tile.weights[result_weight_id])
+		applied = true
+	return applied
 
 
 func distribute_village_weights_placeholder(tiles: Array[Voxel], settings: GenerationSettings) -> void:
@@ -241,7 +289,7 @@ func create_starting_units(count : int, candidate_tiles: Array[Voxel] = []):
 
 	var tiles_for_spawn = candidate_tiles
 	if tiles_for_spawn.is_empty():
-		tiles_for_spawn = get_placeable_voxels()
+		tiles_for_spawn = get_placeable_voxels(current_result)
 	if tiles_for_spawn.is_empty():
 		return
 
